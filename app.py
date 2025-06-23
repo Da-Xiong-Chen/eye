@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from werkzeug.utils import secure_filename
 from PIL import Image
-import torch
+import uuid
 from yolov5 import YOLOv5
 
 app = Flask(__name__)
@@ -13,9 +13,9 @@ RESULT_FOLDER = 'results'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULT_FOLDER, exist_ok=True)
 
-# 載入模型（weights 可用 yolov5s.pt 或上傳自己的 best.pt）
+# 載入 YOLO 模型（放在 app.py 同層）
 MODEL_PATH = 'best.pt'
-model = YOLOv5(MODEL_PATH, device='cpu')  # Render 無 GPU，使用 CPU
+model = YOLOv5(MODEL_PATH, device='cpu')
 
 @app.route('/')
 def index():
@@ -30,21 +30,34 @@ def analyze():
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
 
-    filename = secure_filename(file.filename)
-    filepath = os.path.join(UPLOAD_FOLDER, filename)
-    file.save(filepath)
+    try:
+        # 強制轉換為 JPEG，並使用 UUID 確保檔名唯一
+        image = Image.open(file).convert("RGB")
+        unique_filename = f"{uuid.uuid4()}.jpg"
+        upload_path = os.path.join(UPLOAD_FOLDER, unique_filename)
+        image.save(upload_path, format="JPEG")
+    except Exception as e:
+        print("🔥 圖片轉換錯誤：", e)
+        return jsonify({"error": f"Image conversion failed: {e}"}), 500
 
-    # 執行推論
-    results = model.predict(filepath)
-    output_dir = os.path.join(RESULT_FOLDER, 'result')
-    os.makedirs(output_dir, exist_ok=True)
-    results.save(save_dir=output_dir)
+    try:
+        # 執行推論
+        results = model.predict(upload_path)
+        output_dir = os.path.join(RESULT_FOLDER, 'result')
+        os.makedirs(output_dir, exist_ok=True)
+        results.save(save_dir=output_dir)
 
-    result_image_path = os.path.join(output_dir, filename)
-    return send_file(result_image_path, mimetype='image/png')
+        result_path = os.path.join(output_dir, unique_filename)
+        return send_file(result_path, mimetype='image/jpeg')
+    except Exception as e:
+        print("🔥 推論錯誤：", e)
+        return jsonify({"error": f"Inference failed: {e}"}), 500
 
+# ✅ Render 專用 port 綁定
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', port=10000)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(debug=False, host='0.0.0.0', port=port)
+
 
 
 # from flask import Flask, request, jsonify, render_template, send_file
