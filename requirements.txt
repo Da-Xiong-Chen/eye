@@ -2,3 +2,4 @@ flask
 yolov5
 torch
 Pillow
+waitress
