@@ -5,6 +5,8 @@ from werkzeug.utils import secure_filename
 from PIL import Image
 import uuid
 from yolov5 import YOLOv5
+from waitress import serve
+
 
 app = Flask(__name__)
 
@@ -56,7 +58,7 @@ def analyze():
 # ✅ Render 專用 port 綁定
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
-    app.run(debug=False, host='0.0.0.0', port=port)
+    serve(app, host='0.0.0.0', port=port)
 
 
 
