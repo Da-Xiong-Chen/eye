@@ -1,12 +1,9 @@
 from flask import Flask, request, render_template, send_file, jsonify
 import os
-from pathlib import Path
-from werkzeug.utils import secure_filename
-from PIL import Image
 import uuid
-from yolov5 import YOLOv5
+from pathlib import Path
+from PIL import Image
 from waitress import serve
-
 
 app = Flask(__name__)
 
@@ -15,16 +12,26 @@ RESULT_FOLDER = 'results'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULT_FOLDER, exist_ok=True)
 
-# 載入 YOLO 模型（放在 app.py 同層）
-MODEL_PATH = 'best.pt'
-model = YOLOv5(MODEL_PATH, device='cpu')
+# 模型載入（保護起來避免整個 app crash）
+model = None
+try:
+    print("🔍 嘗試載入 YOLOv5 模型...")
+    from yolov5 import YOLOv5
+    model = YOLOv5("best.pt", device="cpu")
+    print("✅ 模型載入成功")
+except Exception as e:
+    print("❌ 模型載入失敗：", e)
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return "✅ Flask 已啟動，模型狀態：" + ("已載入" if model else "載入失敗")
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
+    print("📩 收到 /analyze 請求")
+    if model is None:
+        return jsonify({"error": "Model failed to load."}), 500
+
     if 'file' not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
 
@@ -33,32 +40,32 @@ def analyze():
         return jsonify({"error": "No selected file"}), 400
 
     try:
-        # 強制轉換為 JPEG，並使用 UUID 確保檔名唯一
         image = Image.open(file).convert("RGB")
         unique_filename = f"{uuid.uuid4()}.jpg"
         upload_path = os.path.join(UPLOAD_FOLDER, unique_filename)
-        image.save(upload_path, format="JPEG")
+        image.save(upload_path)
+        print("✅ 圖片已儲存：", upload_path)
     except Exception as e:
-        print("🔥 圖片轉換錯誤：", e)
-        return jsonify({"error": f"Image conversion failed: {e}"}), 500
+        print("❌ 圖片處理失敗：", e)
+        return jsonify({"error": f"Image error: {e}"}), 500
 
     try:
-        # 執行推論
         results = model.predict(upload_path)
         output_dir = os.path.join(RESULT_FOLDER, 'result')
         os.makedirs(output_dir, exist_ok=True)
         results.save(save_dir=output_dir)
-
         result_path = os.path.join(output_dir, unique_filename)
+        print("✅ 推論完成：", result_path)
         return send_file(result_path, mimetype='image/jpeg')
     except Exception as e:
-        print("🔥 推論錯誤：", e)
-        return jsonify({"error": f"Inference failed: {e}"}), 500
+        print("❌ 推論失敗：", e)
+        return jsonify({"error": f"Inference error: {e}"}), 500
 
-# ✅ Render 專用 port 綁定
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
+    print(f"🚀 啟動 Flask 於 0.0.0.0:{port}")
     serve(app, host='0.0.0.0', port=port)
+
 
 
 
