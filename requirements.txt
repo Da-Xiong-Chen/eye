@@ -1,1 +1,11 @@
+# Flask Web Server
 flask
+
+# YOLOv5 and Deep Learning
+torch>=1.7.0
+opencv-python
+matplotlib
+numpy
+pillow
+scipy
+pyyaml
