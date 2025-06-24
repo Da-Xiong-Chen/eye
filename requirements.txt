@@ -3,3 +3,7 @@ yolov5
 torch
 Pillow
 waitress
+opencv-python
+matplotlib
+numpy
+git+https://github.com/ultralytics/yolov5.git
