@@ -1,4 +1,3 @@
-
 from flask import Flask, request, jsonify, render_template, send_file
 import os
 from pathlib import Path
@@ -45,7 +44,7 @@ def analyze():
     file.save(filepath)
 
     # 使用 YOLO 模型進行推論
-    weights_path = str(Path('yolov5/best.pt').resolve())  # 確保權重路徑為字符串格式
+    weights_path = str(Path('/best.pt').resolve())  # 確保權重路徑為字符串格式
     source_path = str(Path(filepath).resolve())          # 上傳文件的絕對路徑
 
     results = detect.run(
