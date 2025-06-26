@@ -5,13 +5,28 @@ from yolov5 import detect  # YOLOv5 detect 模組
 from werkzeug.utils import secure_filename
 
 import torch
+import pathlib
+import platform
 
-# 覆蓋 torch.load 以確保路徑為字符串格式
+# 覆蓋 torch.load 以確保路徑為字符串格式並處理跨平台兼容性問題
 original_torch_load = torch.load
+
 def patched_torch_load(weights, *args, **kwargs):
     if isinstance(weights, (Path, os.PathLike)):
         weights = str(weights)
-    return original_torch_load(weights, *args, **kwargs)
+    
+    # 處理跨平台路徑兼容性問題
+    if platform.system() == 'Windows':
+        # 在 Windows 上加載時，將 PosixPath 替換為 WindowsPath
+        old_posix_path = pathlib.PosixPath
+        try:
+            pathlib.PosixPath = pathlib.WindowsPath
+            result = original_torch_load(weights, *args, **kwargs)
+        finally:
+            pathlib.PosixPath = old_posix_path
+        return result
+    else:
+        return original_torch_load(weights, *args, **kwargs)
 
 torch.load = patched_torch_load
 
@@ -63,5 +78,5 @@ def analyze():
     # 返回圖片給前端
     return send_file(result_image_path, mimetype='image/png')
 
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+if __name__=='__main__':
+    app.run(debug=True,host='0.0.0.0' ,port=80)
