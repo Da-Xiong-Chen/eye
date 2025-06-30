@@ -1,11 +1,17 @@
 from flask import Flask, request, jsonify, render_template, send_file
+
 import os
+
 from pathlib import Path
+
 from yolov5 import detect  # YOLOv5 detect 模組
+
 from werkzeug.utils import secure_filename
 
 import torch
+
 import pathlib
+
 import platform
 
 # 覆蓋 torch.load 以確保路徑為字符串格式並處理跨平台兼容性問題
@@ -59,7 +65,7 @@ def analyze():
     file.save(filepath)
 
     # 使用 YOLO 模型進行推論
-    weights_path = str(Path('/best.pt').resolve())  # 確保權重路徑為字符串格式
+    weights_path = str(Path('./best.pt').resolve())  # 確保權重路徑為字符串格式
     source_path = str(Path(filepath).resolve())          # 上傳文件的絕對路徑
 
     results = detect.run(
@@ -80,3 +86,9 @@ def analyze():
 
 if __name__=='__main__':
     app.run(debug=True,host='0.0.0.0' ,port=80)
+    
+    
+    
+    
+    
+    

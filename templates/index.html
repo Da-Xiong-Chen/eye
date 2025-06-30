@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YOLOV5 Object Detection</title>
+    <title>YOLOV5 Object Detection for eyes</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -40,7 +40,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>YOLOV5 Object Detection</h1>
+        <h1>YOLOV5 Object Detection For eyes pictures</h1>
         <form id="uploadForm">
             <input type="file" id="file" name="file" accept="image/*">
             <button type="submit">Analyze</button>
@@ -65,23 +65,19 @@
             if (!fileInput.files[0]) {
                 alert('Please upload an image');
                 return;
-            }
-            
+            }         
             // 顯示原始圖片
             const originalImage = document.getElementById('originalImage');
             const file = fileInput.files[0];
             const fileURL = URL.createObjectURL(file);
             originalImage.src = fileURL;
-
             const formData = new FormData();
             formData.append('file', file);
-
             // 發送到後端並接收結果
             const response = await fetch('/analyze', {
                 method: 'POST',
                 body: formData,
             });
-
             if (response.ok) {
                 const blob = await response.blob();
                 const url = URL.createObjectURL(blob);
